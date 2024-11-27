@@ -34,7 +34,7 @@ A simple and intuitive Employee Management System built with **React.js** and **
 1. **Clone the Repository**
 
    ```bash
-    git clone   https://github.com/         TapasyaPateriya04/EMS
+    git clone https://github.com/TapasyaPateriya04/EMS
     cd EMS
    ```
 
@@ -109,6 +109,6 @@ This project is licensed under the MIT License. You are free to use, modify, and
 
 For any questions or feedback, feel free to reach out:
 
-- Email: your-tapasyapateriya04@gmail.com
+- Email: tapasyapateriya04@gmail.com
 - GitHub:(https://github.com/TapasyaPateriya04)
 
