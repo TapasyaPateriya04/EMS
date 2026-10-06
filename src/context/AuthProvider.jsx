@@ -1,29 +1,79 @@
-import React, { createContext, useEffect, useState } from 'react';
-import { getLocalStorage, setLocalStorage } from '../utils/localStorage';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { apiRequest, clearAccessToken, readAccessToken, saveAccessToken } from '../utils/api';
+import PropTypes from 'prop-types';
+import { AuthContext } from './authContext';
 
-export const AuthContext = createContext();
-
-const AuthProvider = ({ children }) => {
-  const [userData, setUserData] = useState(null);
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    setLocalStorage();
-    const { employees } = getLocalStorage();
-    setUserData(employees);
+    let active = true;
+    const token = readAccessToken();
+
+    if (!token) {
+      setLoading(false);
+      return () => {
+        active = false;
+      };
+    }
+
+    apiRequest('/auth/me')
+      .then((account) => {
+        if (active) setUser(account);
+      })
+      .catch((requestError) => {
+        if (!active) return;
+        if (requestError.status === 401) clearAccessToken();
+        setError(requestError.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  // Ensure data in localStorage updates when context changes
   useEffect(() => {
-    if (userData) {
-      localStorage.setItem('employees', JSON.stringify(userData));
+    function handleUnauthorized() {
+      clearAccessToken();
+      setUser(null);
+      setError('Your session has expired. Please sign in again.');
     }
-  }, [userData]);
+    window.addEventListener('ems:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('ems:unauthorized', handleUnauthorized);
+  }, []);
 
-  return (
-    <AuthContext.Provider value={[userData, setUserData]}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const login = useCallback(async (email, password) => {
+    setError('');
+    const session = await apiRequest('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+    saveAccessToken(session.token);
+    setUser(session.employee);
+  }, []);
+
+  const logout = useCallback((reason = '') => {
+    clearAccessToken();
+    setUser(null);
+    setError(reason);
+  }, []);
+
+  const value = useMemo(() => ({
+    user,
+    loading,
+    error,
+    login,
+    logout,
+  }), [user, loading, error, login, logout]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+AuthProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
-
-export default AuthProvider;
