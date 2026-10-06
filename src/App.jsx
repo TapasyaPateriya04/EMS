@@ -1,112 +1,49 @@
-// import React, { useContext, useEffect, useState } from 'react'
-// import Login from './components/Auth/Login'
-// import EmployeeDashboard from './components/Dashboard/EmployeeDashboard'
-// import AdminDashboard from './components/Dashboard/AdminDashboard'
-// import { AuthContext } from './context/AuthProvider'
-
-// const App = () => {
-
-//   const [user, setUser] = useState(null)
-//   const [loggedInUserData, setLoggedInUserData] = useState(null)
-//   const [userData,SetUserData] = useContext(AuthContext)
-
-//   useEffect(()=>{
-//     const loggedInUser = localStorage.getItem('loggedInUser')
-    
-//     if(loggedInUser){
-//       const userData = JSON.parse(loggedInUser)
-//       setUser(userData.role)
-//       setLoggedInUserData(userData.data)
-//     }
-
-//   },[])
-
-
-//   const handleLogin = (email, password) => {
-//     if (email == 'admin@me.com' && password == '123') {
-//       setUser('admin')
-//       localStorage.setItem('loggedInUser', JSON.stringify({ role: 'admin' }))
-//     } else if (userData) {
-//       const employee = userData.find((e) => email == e.email && e.password == password)
-//       if (employee) {
-//         setUser('employee')
-//         setLoggedInUserData(employee)
-//         localStorage.setItem('loggedInUser', JSON.stringify({ role: 'employee',data:employee }))
-//       }
-//     }
-//     else {
-//       alert("Invalid Credentials")
-//     }
-//   }
-
-
-
-//   return (
-//     <>
-//       {!user ? <Login handleLogin={handleLogin} /> : ''}
-//       {user == 'admin' ? <AdminDashboard changeUser={setUser} /> : (user == 'employee' ? <EmployeeDashboard changeUser={setUser} data={loggedInUserData} /> : null) }
-//     </>
-//   )
-// }
-
-// export default App
-
-
-import React, { useContext, useEffect, useState } from 'react';
-import Login from './components/Auth/Login';
-import CreateUser from './components/Auth/CreateUser';
-import EmployeeDashboard from './components/Dashboard/EmployeeDashboard';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { useAuth } from './context/authContext';
 import AdminDashboard from './components/Dashboard/AdminDashboard';
-import { AuthContext } from './context/AuthProvider';
+import EmployeeDashboard from './components/Dashboard/EmployeeDashboard';
+import Login from './components/Auth/Login';
 
-const App = () => {
-  const [user, setUser] = useState(null);
-  const [loggedInUserData, setLoggedInUserData] = useState(null);
-  const [userData] = useContext(AuthContext);
-  const [currentPage, setCurrentPage] = useState('login'); // For navigation
+function SessionLoading() {
+  return (
+    <main className="session-screen" aria-live="polite" aria-busy="true">
+      <div className="loading-mark" aria-hidden="true">A</div>
+      <p>Opening your workspace…</p>
+    </main>
+  );
+}
 
-  useEffect(() => {
-    const loggedInUser = localStorage.getItem('loggedInUser');
-    if (loggedInUser) {
-      const userData = JSON.parse(loggedInUser);
-      setUser(userData.role);
-      setLoggedInUserData(userData.data);
-    }
-  }, []);
+export default function App() {
+  const { user, loading, error, login, logout } = useAuth();
+  const reduceMotion = useReducedMotion();
 
-  const handleLogin = (email, password) => {
-    if (email === 'admin@me.com' && password === '123') {
-      setUser('admin');
-      localStorage.setItem('loggedInUser', JSON.stringify({ role: 'admin' }));
-    } else if (userData) {
-      const employee = userData.find((e) => email === e.email && e.password === password);
-      if (employee) {
-        setUser('employee');
-        setLoggedInUserData(employee);
-        localStorage.setItem('loggedInUser', JSON.stringify({ role: 'employee', data: employee }));
-      } else {
-        alert('Invalid Credentials');
-      }
-    }
-  };
-
-  const navigateTo = (page) => setCurrentPage(page);
+  if (loading) return <SessionLoading />;
 
   return (
-    <>
-      {!user ? (
-        currentPage === 'login' ? (
-          <Login handleLogin={handleLogin} navigateTo={navigateTo} />
-        ) : (
-          <CreateUser navigateTo={navigateTo} />
-        )
-      ) : user === 'admin' ? (
-        <AdminDashboard changeUser={setUser} />
+    <AnimatePresence mode="wait">
+      {user ? (
+        <motion.div
+          key={`workspace-${user.id}`}
+          initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+          transition={{ duration: reduceMotion ? 0 : 0.24, ease: 'easeOut' }}
+        >
+          {user.role === 'ADMIN'
+            ? <AdminDashboard user={user} onLogout={logout} />
+            : <EmployeeDashboard user={user} onLogout={logout} />}
+        </motion.div>
       ) : (
-        <EmployeeDashboard changeUser={setUser} data={loggedInUserData} />
+        <motion.div
+          key="login"
+          initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+          transition={{ duration: reduceMotion ? 0 : 0.24, ease: 'easeOut' }}
+        >
+          <Login onLogin={login} error={error} />
+        </motion.div>
       )}
-    </>
+    </AnimatePresence>
   );
-};
-
-export default App;
+}

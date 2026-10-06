@@ -1,0 +1,65 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: ems-api
+  datasource:
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/ems?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${MYSQL_USER:ems}
+    password: ${MYSQL_PASSWORD:ems_dev_only}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+
+ems:
+  cors:
+    allowed-origin: ${EMS_CORS_ALLOWED_ORIGIN:http://localhost:5173}
+  jwt:
+    secret: ${EMS_JWT_SECRET}
+    expiration: ${EMS_JWT_EXPIRATION_MS:28800000}
+  bootstrap:
+    admin-email: ${EMS_BOOTSTRAP_ADMIN_EMAIL:}
+    admin-password: ${EMS_BOOTSTRAP_ADMIN_PASSWORD:}
+  demo:
+    accounts-enabled: ${EMS_DEMO_ACCOUNTS_ENABLED:false}
+    admin-email: ${EMS_DEMO_ADMIN_EMAIL:}
+    admin-password: ${EMS_DEMO_ADMIN_PASSWORD:}
+    employee-email: ${EMS_DEMO_EMPLOYEE_EMAIL:}
+    employee-password: ${EMS_DEMO_EMPLOYEE_PASSWORD:}
+    employee-name: ${EMS_DEMO_EMPLOYEE_NAME:Demo Employee}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:ems-test;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+ems:
+  jwt:
+    secret: MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+    expiration: 28800000
+  bootstrap:
+    admin-email:
+    admin-password:
+  demo:
+    accounts-enabled: false
+    admin-email:
+    admin-password:
+    employee-email:
+    employee-password:
