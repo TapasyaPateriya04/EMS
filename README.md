@@ -90,14 +90,18 @@ Open the URL printed by Vite (normally `http://localhost:5173`). The frontend ca
 
 ## Vercel and public demo accounts
 
-Vercel can host the Vite frontend, but it does not run this Spring Boot API as part of the static frontend deployment. To use the application after merging or deploying the frontend, first deploy the API to a Java-capable host with a persistent MySQL database, then configure:
+Vercel can host the Vite frontend, but it does not run this Spring Boot API as part of the static frontend deployment. The repository includes a Vercel SPA configuration, a backend Dockerfile, and a Render Blueprint for the API. A zero-cost demo setup can use Render's free web service with Aiven's free MySQL service; these free tiers have availability, capacity, and usage limits and are not appropriate for real employee data.
+
+To create the API service, create an Aiven MySQL service and a Render Blueprint from this repository's `render.yaml`. Render prompts for the `sync: false` environment variables. Configure:
 
 - **Vercel build environment:** `VITE_API_BASE_URL` set to the deployed API's HTTPS URL ending in `/api`, plus `VITE_DEMO_ADMIN_EMAIL`, `VITE_DEMO_ADMIN_PASSWORD`, `VITE_DEMO_EMPLOYEE_EMAIL`, and `VITE_DEMO_EMPLOYEE_PASSWORD`.
-- **API environment:** `MYSQL_URL`, `MYSQL_USER`, `MYSQL_PASSWORD`, `EMS_JWT_SECRET`, and `EMS_CORS_ALLOWED_ORIGIN` set to the production values; set `EMS_DEMO_ACCOUNTS_ENABLED=true` and matching `EMS_DEMO_ADMIN_EMAIL`, `EMS_DEMO_ADMIN_PASSWORD`, `EMS_DEMO_EMPLOYEE_EMAIL`, and `EMS_DEMO_EMPLOYEE_PASSWORD`. `EMS_DEMO_EMPLOYEE_NAME` is optional.
+- **Render API environment:** copy the Aiven database host, port, and database into a JDBC URL such as `jdbc:mysql://HOST:PORT/defaultdb?sslMode=REQUIRED&serverTimezone=UTC`; set `MYSQL_USER` and `MYSQL_PASSWORD` to the Aiven-provided credentials. Generate a Base64-encoded random signing key for `EMS_JWT_SECRET`. Keep the demo passwords consistent with the values entered in Vercel. `EMS_CORS_ALLOWED_ORIGINS` must contain the exact Vercel production origin; add any stable preview origins as a comma-separated list.
 
 The demo credentials in `.env.example` are deliberately public preview credentials, not private secrets. The login page displays them and lets a visitor fill them in. The administrator demo account has normal administrator permissions, and the employee account has normal employee permissions; all demo users share the same data. Use a disposable demo database with no real employee information. The API creates each account when absent and restores its configured password and active status on startup; an existing account at either demo email with a different role causes startup to fail.
 
-After setting Vercel environment variables, redeploy so Vite embeds them in the frontend bundle. Set the API's allowed CORS origin to the exact production Vercel/custom domain. Vercel preview domains need their own CORS configuration if they must call the API. Merging the branch alone does not configure or deploy the API/database.
+Render's free service can sleep after inactivity, so the first API request may take about a minute to wake it. Render states that free services are for hobby/testing rather than production, and its free Postgres is not used here because it expires after 30 days. The external Aiven MySQL service keeps the schema aligned with this app's existing MySQL migration. Configure Aiven's network access so the Render service can connect, using the narrowest supported source-IP rules.
+
+After the Render service is live, set Vercel's `VITE_API_BASE_URL` to its URL ending in `/api`, and set all four `VITE_DEMO_*` values to match the API. Redeploy Vercel so Vite embeds them in the frontend bundle. Avoid broad wildcard CORS. Merging the branch alone does not configure or deploy either service.
 
 ## API overview
 

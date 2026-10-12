@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: ems-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: MYSQL_URL
+        sync: false
+      - key: MYSQL_USER
+        sync: false
+      - key: MYSQL_PASSWORD
+        sync: false
+      - key: EMS_JWT_SECRET
+        sync: false
+      - key: EMS_CORS_ALLOWED_ORIGINS
+        value: https://ems-roan-eta.vercel.app
+      - key: EMS_DEMO_ACCOUNTS_ENABLED
+        value: "true"
+      - key: EMS_DEMO_ADMIN_EMAIL
+        value: admin.demo@ems.test
+      - key: EMS_DEMO_ADMIN_PASSWORD
+        sync: false
+      - key: EMS_DEMO_EMPLOYEE_EMAIL
+        value: employee.demo@ems.test
+      - key: EMS_DEMO_EMPLOYEE_PASSWORD
+        sync: false
+      - key: EMS_DEMO_EMPLOYEE_NAME
+        value: Demo Employee

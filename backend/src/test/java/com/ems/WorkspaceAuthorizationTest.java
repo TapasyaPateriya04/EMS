@@ -20,12 +20,14 @@ import java.time.LocalDate;
 
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@SpringBootTest(properties = "ems.cors.allowed-origins=http://localhost:5173,https://ems-preview.example")
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class WorkspaceAuthorizationTest {
@@ -89,6 +91,26 @@ class WorkspaceAuthorizationTest {
                 "People",
                 otherEmployee
         ));
+    }
+
+    @Test
+    void healthCheckIsPublicAndCorsAllowsConfiguredPreviewOrigins() throws Exception {
+        mockMvc.perform(get("/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ok"));
+
+        mockMvc.perform(options("/api/auth/login")
+                        .header("Origin", "https://ems-preview.example")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "Content-Type"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "https://ems-preview.example"));
+
+        mockMvc.perform(options("/api/auth/login")
+                        .header("Origin", "https://unconfigured.example")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "Content-Type"))
+                .andExpect(header().doesNotExist("Access-Control-Allow-Origin"));
     }
 
     @Test
